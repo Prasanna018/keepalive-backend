@@ -1,6 +1,7 @@
 import os
 import time
 import requests
+import ssl
 from datetime import datetime
 from celery import Celery
 from .database import services_collection, logs_collection
@@ -11,8 +12,6 @@ from bson import ObjectId
 load_dotenv()
 
 REDIS_URI = os.getenv("REDIS_URI", "redis://localhost:6379/0")
-
-import ssl
 
 # Upstash uses rediss:// (TLS). Celery requires explicit ssl_cert_reqs for secure Redis.
 SSL_OPTIONS = {"ssl_cert_reqs": ssl.CERT_NONE}
@@ -28,6 +27,19 @@ if REDIS_URI.startswith("rediss://"):
     celery.conf.broker_use_ssl = SSL_OPTIONS
     celery.conf.redis_backend_use_ssl = SSL_OPTIONS
 
+# --- THE FIX FOR UPSTASH QUOTA ---
+celery.conf.broker_transport_options = {
+    'visibility_timeout': 3600,
+    'polling_interval': 540,  # Check for new tasks every 9 minutes (Default is 1s)
+    'socket_timeout': 60,
+    'socket_connect_timeout': 60,
+}
+celery.conf.worker_send_task_events = False
+celery.conf.worker_enable_remote_control = False
+celery.conf.worker_prefetch_multiplier = 1
+celery.conf.broker_connection_retry_on_startup = True
+# ---------------------------------
+
 celery.conf.beat_schedule = {
     "run-scheduler-every-10-minutes": {
         "task": "app.worker.scheduler_task",
@@ -36,32 +48,20 @@ celery.conf.beat_schedule = {
 }
 
 celery.conf.timezone = "UTC"
-celery.conf.worker_send_task_events = False
-celery.conf.worker_enable_remote_control = False
-celery.conf.broker_transport_options = {
-    'visibility_timeout': 3600,
-    'socket_timeout': 30,
-    'socket_connect_timeout': 30,
-    'polling_interval': 10
-}
 
 def should_run(service):
     now = datetime.utcnow()
     last_run = service.get("last_run")
-
     if not last_run:
         return True
-
     diff = (now - last_run).total_seconds() / 60
     return diff >= service.get("interval", 15)
 
 @celery.task(name="app.worker.scheduler_task")
 def scheduler_task():
     services = services_collection.find({"is_active": True})
-    
     for service in services:
         if should_run(service):
-            # Serialize ObjectId to string for Celery
             service_dict = {k: str(v) if isinstance(v, ObjectId) else v for k, v in service.items()}
             ping_service.delay(service_dict)
 
@@ -73,6 +73,7 @@ def ping_service(self, service):
     start = time.time()
     log = {
         "service_id": service["_id"],
+        "service_url": service["url"],
         "timestamp": datetime.utcnow()
     }
 
@@ -80,8 +81,6 @@ def ping_service(self, service):
         method = service.get("method", "GET").upper()
         headers = service.get("headers", {})
         
-        # Convert list of headers `[{key: "...", value: "..."}]` to dict `{"key": "value"}` if needed
-        # Assuming headers are stored as dict or list in MongoDB based on frontend representation
         req_headers = {}
         if isinstance(headers, dict):
             req_headers = headers
@@ -96,7 +95,7 @@ def ping_service(self, service):
         log.update({
             "status": "success",
             "status_code": res.status_code,
-            "response_time": int((time.time() - start) * 1000),  # ms
+            "response_time": int((time.time() - start) * 1000),
             "message": res.text[:500] if res.text else ""
         })
     except Exception as e:
