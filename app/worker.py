@@ -36,6 +36,8 @@ celery.conf.beat_schedule = {
 }
 
 celery.conf.timezone = "UTC"
+celery.conf.worker_send_task_events = False
+celery.conf.worker_enable_remote_control = False
 
 def should_run(service):
     now = datetime.utcnow()
