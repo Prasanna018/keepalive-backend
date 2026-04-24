@@ -12,11 +12,21 @@ load_dotenv()
 
 REDIS_URI = os.getenv("REDIS_URI", "redis://localhost:6379/0")
 
+import ssl
+
+# Upstash uses rediss:// (TLS). Celery requires explicit ssl_cert_reqs for secure Redis.
+SSL_OPTIONS = {"ssl_cert_reqs": ssl.CERT_NONE}
+
 celery = Celery(
     "keepalive_worker",
     broker=REDIS_URI,
     backend=REDIS_URI
 )
+
+# Only apply SSL options if using a secure rediss:// connection
+if REDIS_URI.startswith("rediss://"):
+    celery.conf.broker_use_ssl = SSL_OPTIONS
+    celery.conf.redis_backend_use_ssl = SSL_OPTIONS
 
 celery.conf.beat_schedule = {
     "run-scheduler-every-1-minute": {
@@ -71,9 +81,9 @@ def ping_service(self, service):
             req_headers = {h["key"]: h["value"] for h in headers if "key" in h and "value" in h}
 
         if method == "POST":
-            res = requests.post(service["url"], headers=req_headers, timeout=10)
+            res = requests.post(service["url"], headers=req_headers, timeout=60)
         else:
-            res = requests.get(service["url"], headers=req_headers, timeout=10)
+            res = requests.get(service["url"], headers=req_headers, timeout=60)
 
         log.update({
             "status": "success",

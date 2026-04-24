@@ -1,14 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routes import auth, services, logs
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 app = FastAPI(title="KeepAlive API")
 
-# Setup CORS
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+# Read CORS origins from .env (comma-separated)
+cors_env = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:8080")
+origins = [o.strip() for o in cors_env.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
