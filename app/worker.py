@@ -88,7 +88,8 @@ def ping_service(self, service):
         log.update({
             "status": "success",
             "status_code": res.status_code,
-            "response_time": int((time.time() - start) * 1000)  # ms
+            "response_time": int((time.time() - start) * 1000),  # ms
+            "message": res.text[:500] if res.text else ""
         })
     except Exception as e:
         log.update({

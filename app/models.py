@@ -80,6 +80,7 @@ class LogResponse(BaseModel):
     status_code: Optional[int] = None
     response_time: Optional[float] = None
     error: Optional[str] = None
+    message: Optional[str] = None
     timestamp: datetime
 
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
