@@ -50,7 +50,7 @@ class Token(BaseModel):
 class ServiceBase(BaseModel):
     url: str
     method: str = "GET"
-    interval: int = 5
+    interval: int = Field(default=15, ge=15)
     headers: Optional[Dict[str, str]] = {}
     is_active: bool = True
 

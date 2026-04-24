@@ -29,9 +29,9 @@ if REDIS_URI.startswith("rediss://"):
     celery.conf.redis_backend_use_ssl = SSL_OPTIONS
 
 celery.conf.beat_schedule = {
-    "run-scheduler-every-1-minute": {
+    "run-scheduler-every-10-minutes": {
         "task": "app.worker.scheduler_task",
-        "schedule": 60.0,
+        "schedule": 600.0,
     },
 }
 
@@ -45,7 +45,7 @@ def should_run(service):
         return True
 
     diff = (now - last_run).total_seconds() / 60
-    return diff >= service.get("interval", 5)
+    return diff >= service.get("interval", 15)
 
 @celery.task(name="app.worker.scheduler_task")
 def scheduler_task():
