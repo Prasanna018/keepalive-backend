@@ -1,0 +1,25 @@
+.env
+
+.venv
+__pycache__
+.pytest_cache
+.coverage
+.coverage.*
+.mypy_cache
+.ruff_cache
+
+# Distribution / Packaging
+dist/
+build/
+*.egg-info/
+.DS_Store
+
+# Testing
+test_results/
+coverage.xml
+mock_data/
+mock_dashboard/
+.idea/
+# Environment variables
+*.env
+.env.*  
