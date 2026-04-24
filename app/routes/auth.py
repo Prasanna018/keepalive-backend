@@ -11,6 +11,8 @@ from ..utils.security import (
     ALGORITHM
 )
 from jose import jwt, JWTError
+from ..database import users_collection
+from bson import ObjectId
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
