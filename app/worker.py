@@ -38,6 +38,12 @@ celery.conf.beat_schedule = {
 celery.conf.timezone = "UTC"
 celery.conf.worker_send_task_events = False
 celery.conf.worker_enable_remote_control = False
+celery.conf.broker_transport_options = {
+    'visibility_timeout': 3600,
+    'socket_timeout': 30,
+    'socket_connect_timeout': 30,
+    'polling_interval': 10
+}
 
 def should_run(service):
     now = datetime.utcnow()

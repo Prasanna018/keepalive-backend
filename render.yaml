@@ -27,7 +27,7 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     # The -B flag runs the beat scheduler alongside the worker
-    startCommand: celery -A app.worker worker -B --loglevel=info 
+    startCommand: celery -A app.worker worker -B --loglevel=info --without-heartbeat --without-mingle --without-gossip
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0 # Update if you use a different version
