@@ -22,4 +22,7 @@ mock_dashboard/
 .idea/
 # Environment variables
 *.env
-.env.*  
+.env.*
+
+# Celery
+celerybeat-schedule*
